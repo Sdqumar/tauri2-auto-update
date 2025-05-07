@@ -1,3 +1,11 @@
+name: Publish Windows Tauri App
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
 jobs:
   publish-windows:
     runs-on: windows-latest
