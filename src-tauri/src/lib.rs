@@ -17,7 +17,7 @@ pub fn run() {
             {
                 let app_handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
-                    check_update(&app_handle).await;
+                    check_update(app_handle).await;
                 });
             }
             Ok(())
@@ -29,23 +29,16 @@ pub fn run() {
 }
 
 #[cfg(not(debug_assertions))]
-async fn check_update(app_handle: &tauri::AppHandle) {
-    // Note the dot before `expect`
-    match app_handle
-        .updater()                       // Provided by UpdaterExt
-        .expect("Failed to initialize updater") // Unwrap the Result
-        .check()                        // Returns a Result<Update>
-        .await
-    {
-        Ok(update) => {
-            if update.is_update_available() {
-                println!("Update available: {}", update.version());
-                // Download & install handles its own errors
-                if let Err(e) = update.download_and_install().await {
-                    eprintln!("Error installing update: {}", e);
-                }
-            }
-        }
-        Err(e) => eprintln!("Error checking for updates: {}", e),
-    }
+async fn check_update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
+  if let Some(update) = app.updater()?.check().await? {
+    update
+      .download_and_install(|c, t| println!("Downloaded {c} / {t:?}"), || println!("Done"))
+      .await?;
+    println!("Update installed successfully");
+    app.restart();
+  } else {
+    println!("No update available");
+  }
+  Ok(())
 }
+
