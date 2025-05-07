@@ -29,11 +29,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-22.04
-          - macos-latest
-          - windows-latest
-
+        platform: [windows-latest]
+        include:
+          - os: windows-latest
+            rust_target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -47,28 +46,11 @@ jobs:
           toolchain: stable
           cache: true
 
-      - name: install Linux dependencies
-        if: matrix.os == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y webkit2gtk-4.1
 
-      - name: build Tauri app for Windows, Linux
-        if: matrix.os != 'macos-latest'
+      - name: build Tauri app for Windows
         run: |
           yarn install --frozen-lockfile
           yarn tauri build
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: Install x86_64-apple-darwin for mac and build Tauri binaries
-        if: matrix.os == 'macos-latest'
-        run: |
-          rustup target add x86_64-apple-darwin
-          yarn install --frozen-lockfile
-          yarn tauri build --target x86_64-apple-darwin
-          yarn tauri build --target aarch64-apple-darwin
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
