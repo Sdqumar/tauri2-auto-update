@@ -1,0 +1,56 @@
+name: Debug Tauri Keys
+
+on:
+  push
+
+jobs:
+  check-keys:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          working-directory: ./src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+        shell: pwsh
+
+      - name: Setup signing key file
+        run: |
+          $keyData = "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          $keyPath = "${{ github.workspace }}\signing-key.key"
+          Set-Content -Path $keyPath -Value $keyData
+          echo "SIGNING_KEY_PATH=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+        
+      - name: Debug key values
+        run: |
+          # Navigate to the right directory for Tauri commands
+          cd src-tauri
+          
+          $config = Get-Content -Path "tauri.conf.json" | ConvertFrom-Json
+          $configKey = $config.plugins.updater.pubkey
+          echo "Config public key from tauri.conf.json:"
+          echo $configKey
+          echo "-----"
+          
+          echo "Generating public key from private key..."
+          $pubKey = (cargo tauri signer pubkey $env:SIGNING_KEY_PATH)
+          echo "Actual public key from private key:"
+          echo $pubKey
+          echo "-----"
+          
+          if ($configKey -eq $pubKey) {
+            echo "✅ SUCCESS: Public keys match!"
+          } else {
+            echo "❌ ERROR: Public keys do not match!"
+            echo "If you need to update the config, replace with this key in your tauri.conf.json:"
+            echo $pubKey
+          }
+        shell: pwsh
