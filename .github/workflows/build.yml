@@ -11,14 +11,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         
-      - name: Setup signing key file
-        run: |
-          $keyData = "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
-          $keyPath = "${{ github.workspace }}\signing-key.key"
-          Set-Content -Path $keyPath -Value $keyData
-        shell: pwsh
-        
-      - name: Compare Key Values
+      - name: Compare Keys
         run: |
           # Extract config key
           $config = Get-Content -Path "src-tauri/tauri.conf.json" | ConvertFrom-Json
@@ -27,15 +20,16 @@ jobs:
           echo $configKey
           echo "-----"
           
-          # Display private key first few characters (safely)
-          $keyData = Get-Content -Path "${{ github.workspace }}\signing-key.key" -Raw
-          $keyPreview = $keyData.Substring(0, [Math]::Min(20, $keyData.Length)) + "..."
-          echo "Private key preview (first few chars):"
-          echo $keyPreview
+          # Use expected public key from secrets
+          $expectedPubKey = "${{ secrets.TAURI_SIGNING_PUBLIC_KEY }}"
+          echo "Expected public key from secrets:"
+          echo $expectedPubKey
           echo "-----"
           
-          echo "To extract the public key from your private key locally, run:"
-          echo "cargo tauri signer pubkey path/to/your/key.key"
-          echo ""
-          echo "Then compare it with the config key to ensure they match."
+          if ($configKey -eq $expectedPubKey) {
+            echo "✅ SUCCESS: Public keys match!"
+          } else {
+            echo "❌ ERROR: Public keys do not match!"
+            echo "Update your tauri.conf.json with the correct public key."
+          }
         shell: pwsh
