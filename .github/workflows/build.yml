@@ -27,8 +27,12 @@ jobs:
 
       - name: Extract version from package.json
         id: get_version
+        shell: pwsh
         run: |
-          echo "PACKAGE_VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
+          # Grab the version from package.json
+          $version = node -p "require('./package.json').version"
+          # Append it to the Actions env file
+          Add-Content -Path $env:GITHUB_ENV -Value "PACKAGE_VERSION=$version"
 
       # ----------------------------
       # Cache Rust build for Tauri Action
