@@ -59,7 +59,7 @@ jobs:
           targets: ${{ matrix.targets }}
           
       - name: Install frontend dependencies
-        run: npm ci
+        run: yarn
         
       - name: Build frontend
         run: npm run build
