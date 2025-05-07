@@ -40,10 +40,10 @@
         "installMode": "basicUi"
       },
       "endpoints": [
-        "https://github.com/Sdqumar/tauri2-auto-update/releases/latest/download/latest.json"
+        "https://cdn.crabnebula.app/update/pinely/tauri2-auto-update/{{target}}-{{arch}}/{{current_version}}"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc5NEM3MDVGNDYzNUVBMzMKUldRejZqVkdYM0JNZVpoQk5UNmNOZFFxSUZEem0yVi9HNkdVM2ZLazNjOVFuMGtudXJUVFNxcXYK"
     }
-}
+  }
 }
