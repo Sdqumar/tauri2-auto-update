@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri2-auth0-browser-login",
+  "productName": "tauri2-auto-update",
   "version": "0.1.0",
-  "identifier": "com.tauri2-auth0-browser-login.app",
+  "identifier": "com.tauri2-auto-update.app",
   "build": {
     "beforeDevCommand": "yarn dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "tauri2-auth0-browser-login",
+        "title": "tauri2-auto-update",
         "width": 800,
         "height": 600
       }
