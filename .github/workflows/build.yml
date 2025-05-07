@@ -1,93 +1,48 @@
-name: Release Tauri App
+name: Publish Windows Tauri App
 
 on:
+  workflow_dispatch:
   push:
     tags:
-      - 'v*'  # Only run on version tags like v1.0.0
-
-permissions:
-  contents: write  
+      - 'v*'
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
-      
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Create Release
-        id: create-release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: context.ref.replace('refs/tags/', ''),
-              name: context.ref.replace('refs/tags/', ''),
-              draft: true,
-              prerelease: false
-            });
-            return data.id
+  publish-windows:
+    name: Build and Release on Windows
+    runs-on: windows-latest
+    permissions:
+      contents: write
 
-  build-tauri:
-    needs: create-release
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [macos-latest]
-        include:
-          - platform: macos-latest
-            targets: "aarch64-apple-darwin,x86_64-apple-darwin"
-            
-    runs-on: ${{ matrix.platform }}
-    
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          
-      - name: Install Rust (Stable)
+          node-version: lts/*
+          cache: 'yarn'
+
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.targets }}
-          
-      - name: Install frontend dependencies
-        run: yarn
-        
-      - name: Build frontend
-        run: npm run build
-        
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+          # No extra targets needed on Windows runners
+          targets: ''
+
+      - name: Install Frontend Dependencies
+        run: yarn install
+
+      - name: Build & Release with Tauri Action
+        uses: tauri-apps/tauri-action@v0.5.20
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: --target aarch64-apple-darwin --target x86_64-apple-darwin
-
-  publish-release:
-    needs: [create-release, build-tauri]
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Publish release
-        uses: actions/github-script@v7
-        env:
-          release_id: ${{ needs.create-release.outputs.release_id }}
-        with:
-          script: |
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: process.env.release_id,
-              draft: false
-            });
+          tagName: 'v__VERSION__'
+          releaseName: 'Windows Release v__VERSION__'
+          releaseBody: 'Windows installer and updater manifest for version __VERSION__'
+          releaseDraft: true
+          prerelease: false
+          # Windows builds use default args (NSIS or WiX installers)
+          args: ''
