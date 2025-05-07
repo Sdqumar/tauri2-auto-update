@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import { checkForAppUpdates } from "./updater";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -11,6 +12,26 @@ function App() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
+
+   useEffect(() => {
+    console.log("App mounted");
+    async function fetchData() {
+      // Check for updates with a slight delay to ensure app is fully loaded
+      setTimeout(async () => {
+        try {
+          console.log("Starting update check...");
+          await checkForAppUpdates();
+        } catch (error) {
+          console.error("Update check failed:", error);
+        }
+      }, 3000); // 3 second delay
+    }
+    
+    
+    
+    fetchData();
+  }, []);
+
 
   return (
     <main className="container">
