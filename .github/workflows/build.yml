@@ -1,14 +1,5 @@
-name: Publish Windows Tauri App
-
-on:
-  workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
-
 jobs:
   publish-windows:
-    name: Build and Release on Windows
     runs-on: windows-latest
     permissions:
       contents: write
@@ -23,14 +14,21 @@ jobs:
           node-version: lts/*
           cache: 'yarn'
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          # No extra targets needed on Windows runners
-          targets: ''
-
       - name: Install Frontend Dependencies
         run: yarn install
+
+      # ----------------------------
+      # Cache Rust/Cargo build artifacts
+      # ----------------------------
+      - name: Cache Rust build for Tauri Action
+        uses: actions/cache@v3
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+          key: ${{ runner.os }}-tauri-${{ hashFiles('**/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-tauri-
 
       - name: Build & Release with Tauri Action
         uses: tauri-apps/tauri-action@v0.5.20
@@ -44,5 +42,4 @@ jobs:
           releaseBody: 'Windows installer and updater manifest for version __VERSION__'
           releaseDraft: true
           prerelease: false
-          # Windows builds use default args (NSIS or WiX installers)
           args: ''

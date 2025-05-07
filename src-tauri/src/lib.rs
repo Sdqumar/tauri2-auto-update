@@ -1,4 +1,6 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+// Bring `updater()` into scope
+use tauri_plugin_updater::UpdaterExt;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -7,9 +9,10 @@ fn greet(name: &str) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Register the updater plugin
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
-            // Check for updates when the app starts
+            // Only check for updates in release builds
             #[cfg(not(debug_assertions))]
             {
                 let app_handle = app.handle().clone();
@@ -25,22 +28,21 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-
 #[cfg(not(debug_assertions))]
 async fn check_update(app_handle: &tauri::AppHandle) {
-    use tauri_plugin_updater::UpdaterExt;
-    
-    // Check for updates
-    match app_handle.updater().check().await {
+    // Note the dot before `expect`
+    match app_handle
+        .updater()                       // Provided by UpdaterExt
+        .expect("Failed to initialize updater") // Unwrap the Result
+        .check()                        // Returns a Result<Update>
+        .await
+    {
         Ok(update) => {
             if update.is_update_available() {
-                // Update is available, can prompt the user or automatically download
                 println!("Update available: {}", update.version());
-                
-                // Download and install the update
-                match update.download_and_install().await {
-                    Ok(_) => println!("Update installed successfully"),
-                    Err(e) => eprintln!("Error installing update: {}", e),
+                // Download & install handles its own errors
+                if let Err(e) = update.download_and_install().await {
+                    eprintln!("Error installing update: {}", e);
                 }
             }
         }
