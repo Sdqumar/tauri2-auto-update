@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CN_APPLICATION: "pinely/tauri2-auto-update"
+  CN_APPLICATION: "sadeeq/tauri2-auto-update"
 
 jobs:
   draft:
