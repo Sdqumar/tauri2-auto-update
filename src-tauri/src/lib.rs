@@ -1,5 +1,3 @@
-// Bring `updater()` into scope
-use tauri_plugin_updater::UpdaterExt;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
