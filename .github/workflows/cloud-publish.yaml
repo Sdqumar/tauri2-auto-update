@@ -21,6 +21,8 @@ jobs:
         with:
           node-version: lts/*
           cache: 'yarn'
+      - name: install dependencies (windows only)
+        run: cargo install --force trusted-signing-cli
 
       - name: Install Frontend Dependencies
         run: yarn install
