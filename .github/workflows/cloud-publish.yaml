@@ -1,77 +1,66 @@
-name: Tauri v2 Release Process
+name: Publish Windows Tauri App
+
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  CN_APPLICATION: "sadeeq/tauri2-auto-update"
-
 jobs:
-  draft:
-    runs-on: ubuntu-22.04
+  publish-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
-      - uses: actions/checkout@v4
-      - name: create draft release
-        uses: crabnebula-dev/cloud-release@v0
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for reading package.json & front‑end)
+        uses: actions/setup-node@v4
         with:
-          command: release draft ${{ env.CN_APPLICATION }} --framework tauri
-          api-key: ${{ secrets.CN_API_KEY }}
+          node-version: lts/*
+          cache: 'yarn'
 
-  build:
-    needs: draft
+      - name: Install Frontend Dependencies
+        run: yarn install
 
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [windows-latest]
-        include:
-          - os: windows-latest
-            rust_target: x86_64-pc-windows-msvc
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          cache: true
-
-
-      - name: build Tauri app for Windows
+      - name: Extract version from package.json
+        id: get_version
+        shell: pwsh
         run: |
-          yarn install --frozen-lockfile
-          yarn tauri build
+          # Grab the version from package.json
+          $version = node -p "require('./package.json').version"
+          # Append it to the Actions env file
+          Add-Content -Path $env:GITHUB_ENV -Value "PACKAGE_VERSION=$version"
+
+      # ----------------------------
+      # Cache Rust build for Tauri Action
+      # ----------------------------
+      - name: Cache Rust build for Tauri Action
+        uses: actions/cache@v3
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+          key: ${{ runner.os }}-tauri-${{ hashFiles('**/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-tauri-
+
+      
+      - name: Build & Release with Tauri Action
+        uses: tauri-apps/tauri-action@v0.5.20
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: upload assets
-        uses: crabnebula-dev/cloud-release@v0
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         with:
-          command: release upload ${{ env.CN_APPLICATION }} --framework tauri
-          api-key: ${{ secrets.CN_API_KEY }}
-          path: ./src-tauri
-
-  publish:
-    needs: build
-
-    runs-on: ubuntu-22.04
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: publish release
-        uses: crabnebula-dev/cloud-release@v0
-        with:
-          command: release publish ${{ env.CN_APPLICATION }} --framework tauri
-          api-key: ${{ secrets.CN_API_KEY }}
+          tagName: ${{ env.PACKAGE_VERSION }}
+          releaseName: 'Windows Release ${{ env.PACKAGE_VERSION }}'
+          releaseBody: 'Windows installer and updater manifest for version ${{ env.PACKAGE_VERSION }}'
+          releaseDraft: false
+          prerelease: false
+          args: ''
