@@ -13,6 +13,8 @@ env:
 
 jobs:
   draft:
+    runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v4
       - name: create draft release
@@ -21,17 +23,22 @@ jobs:
           command: release draft ${{ env.CN_APPLICATION }} --framework tauri
           api-key: ${{ secrets.CN_API_KEY }}
 
-   publish-windows:
-    runs-on: windows-latest
-    permissions:
-      contents: write
+  build:
+    needs: draft
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest]
+        include:
+          - os: windows-latest
+            rust_target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      
       - name: Setup Node.js (for reading package.json & front‑end)
         uses: actions/setup-node@v4
         with:
