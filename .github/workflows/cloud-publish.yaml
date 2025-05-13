@@ -68,12 +68,7 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          with:
-          tagName: ${{ env.PACKAGE_VERSION }}
-          releaseName: 'Windows Release ${{ env.PACKAGE_VERSION }}'
-          releaseBody: 'Windows installer and updater manifest for version ${{ env.PACKAGE_VERSION }}'
-          releaseDraft: false
-          prerelease: false
+        with:
           args: ''
 
       - name: upload assets
