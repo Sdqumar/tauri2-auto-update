@@ -23,23 +23,26 @@ jobs:
           command: release draft ${{ env.CN_APPLICATION }} --framework tauri
           api-key: ${{ secrets.CN_API_KEY }}
 
-  build:
-    needs: draft
-
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [windows-latest]
-        include:
-          - os: windows-latest
-            rust_target: x86_64-pc-windows-msvc
-    runs-on: ${{ matrix.os }}
+   publish-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      
+      - name: Setup Node.js (for reading package.json & front‑end)
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'yarn'
+      
+      - name: Install Frontend Dependencies
+        run: yarn install
+
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -58,7 +61,7 @@ jobs:
 
       - name: install dependencies (windows only)
         run: cargo install --force trusted-signing-cli
-        
+
       - name: Extract version from package.json
         id: get_version
         shell: pwsh
