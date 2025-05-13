@@ -45,17 +45,31 @@ jobs:
         with:
           toolchain: stable
           cache: true
+      
+      - name: Cache Rust build for Tauri Action
+        uses: actions/cache@v3
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+          key: ${{ runner.os }}-tauri-${{ hashFiles('**/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-tauri-
 
       - name: install dependencies (windows only)
         run: cargo install --force trusted-signing-cli
         
-      - name: build Tauri app for Windows
-        run: |
-          yarn install --frozen-lockfile
-          yarn tauri build
+      - name: Build Tauri App (No Release)
+        uses: tauri-apps/tauri-action@v0.5.20
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        with:
+          args: ''
 
       - name: upload assets
         uses: crabnebula-dev/cloud-release@v0
