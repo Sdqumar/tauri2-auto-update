@@ -25,7 +25,7 @@
     "active": true,
     "targets": "all",
       "windows": {
-      "signCommand": "trusted-signing-cli -e https://eus.codesigning.azure.net/ -a aiden-trusted-signing -c AidenIQ -d AidenIQ Desktop %1"
+      "signCommand": "trusted-signing-cli -e https://eus.codesigning.azure.net/ -a aiden-trusted-signing -c AidenIQ -d 'AidenIQ Desktop' %1"
     },
     "createUpdaterArtifacts": true,
     "icon": [
